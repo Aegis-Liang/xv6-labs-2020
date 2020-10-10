@@ -6,6 +6,7 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "sysinfo.h"
 
 uint64
 sys_exit(void)
@@ -28,6 +29,7 @@ sys_fork(void)
 {
   return fork();
 }
+
 
 uint64
 sys_wait(void)
@@ -95,3 +97,41 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+uint64
+sys_trace(void)
+{
+  int n;
+  
+  if(argint(0, &n) < 0)
+    return -1;
+    
+  myproc()->tracenum = n;
+    
+  // try argument, only 1 argument is input to system call trace()
+  // printf("trace %d\n", n);
+  // printf("trace %d\n", myproc()->tracenum);
+  
+  return 0; // return 0 when success, not n
+}
+
+uint64
+sys_sysinfo(void)
+{
+  uint64 addr;
+  struct sysinfo xinfo;
+  struct proc *p = myproc();
+  
+  if(argaddr(0, &addr)<0)
+    return -1;
+     
+  xinfo.freemem = xfreemem();
+  xinfo.nproc = xnproc();
+  
+  //copyout() function is in vm.c
+  if(copyout(p->pagetable, addr, (char *)&xinfo, sizeof(xinfo))<0)
+    return -1;
+    
+  return 0;
+}
+
